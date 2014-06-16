@@ -2,11 +2,12 @@ require 'forwardable'
 require_relative 'accounts'
 require_relative 'matcher'
 
-class InvalidFileTypeError < StandardError; end
+class InvalidTransactionError < StandardError; end
+class InvalidTransactionTypeError < StandardError; end
 
-class Transaction < Struct.new(:txn_num, :originator, :recipient, :type, :amount) do
+Transaction = Struct.new(:txn_num, :originator, :recipient, :type, :amount) do
   def valid?
-    puts "s"
+    !txn_num.nil? && !originator.nil? && !recipient.nil? && !type.nil? && !amount.nil?
   end
 end
 
@@ -30,6 +31,8 @@ class Transactions
       elsif txn.type == "Debit"
         txn.originator.credit(txn.amount.to_i)
         txn.recipient.debit(txn.amount.to_i)
+      else
+        raise InvalidTransactionTypeError
       end
     end
   end
@@ -41,15 +44,12 @@ class Transactions
     t.amount = Matcher.new(ary).get_value_for("Amount")
 
     originator_account_info = Matcher.new(ary).get_account_numbers("Originator")
-    acct = @accounts.find_or_create(*originator_account_info)
-    t.originator = acct
+    t.originator = @accounts.find_or_create(*originator_account_info)
 
     recipient_account_info = Matcher.new(ary).get_account_numbers("Recipient")
-    acct = @accounts.find_or_create(*recipient_account_info)
-    t.recipient = acct
+    t.recipient = @accounts.find_or_create(*recipient_account_info)
 
-    puts t.valid?
-    puts t.inspect
+    raise InvalidTransactionError unless t.valid?
 
     @transactions << t
   end

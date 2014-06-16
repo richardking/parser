@@ -3,6 +3,7 @@ require_relative './parser/transactions'
 require_relative './parser/matcher'
 
 class InvalidFileTypeError < StandardError; end
+class MissingHeaderInformationError < StandardError; end
 
 class Parser
   attr_reader :file, :batch, :description, :transactions, :path
@@ -53,9 +54,10 @@ class Parser
     header = next_section
     @batch = Matcher.new(header).get_value_for("Batch")
     @description = Matcher.new(header).get_value_for("Description")
+    raise MissingHeaderInformationError unless batch && description
   end
 
   def valid_file_type?
-    file.first.strip == "/*BDI*/"
+    file.first.strip == "/*BDI*/" && file.last.strip == "=="
   end
 end
